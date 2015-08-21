@@ -36,48 +36,41 @@ ball vx vy =
   |> filled Color.blue
   |> move (toFloat vx, toFloat vy)
 
-ship : Ship
-ship =
-  { position = (0, 0)}
-
 -- correct for Mouse <-> Collage discrepancy in NUll-points
 convert : (Int, Int) -> (Int, Int) -> (Int, Int)
 convert (w, h) (vx, vy) =
-  (vx - w // 2, h // 2 - vy)
+  (vx - w // 2, 15 - h // 2)
 
 ---VIEW
 -- create shown Element
-viewShip : (Int, Int) -> (Int, Int) -> Form
-viewShip (w, h) (vx, vy) =
+viewShip : (Int, Int) -> Form
+viewShip (vx, vy) =
   image 40 30 "images/Ship.png"
   |> toForm
-  |> move (toFloat (vx - w // 2), toFloat (15 - h // 2))
+  |> move (toFloat vx, toFloat vy)
 
 viewShot : (Int, Int) -> Form
-viewShot (x,y)=
-  rect 5 400
+viewShot (x, y)=
+  rect 5 5
   |> filled Color.purple
   |> move (toFloat x, toFloat y)
 
 view : (Int, Int) -> Game -> Element
 view (w, h) game =
-  collage w h (viewShip (w, h) game.ship.position :: (List.map viewShot game.shots))
+  collage w h (viewShip game.ship.position :: (List.map viewShot game.shots))
 
-
+--- UPDATE
 -- update view after event
 update : Action -> Game -> Game
 update action oldGame =
   case action of
     Click ->
       { oldGame
-      | shots <- ship.position :: oldGame.shots
+      | shots <- oldGame.ship.position :: oldGame.shots
       }
     Movement newPosition ->
       { oldGame
-      | ship <-
-        { ship
-        | position <- newPosition
-        }
+      | ship <- Ship newPosition
       }
     Resize  newSize->
       { oldGame
@@ -88,7 +81,7 @@ inputs : Signal Action
 inputs =
   Signal.mergeMany
     [ Signal.map (always Click) Mouse.clicks
-    , Signal.map Movement Mouse.position
+    , Signal.map Movement (Signal.map2 convert Window.dimensions Mouse.position)
     , Signal.map Resize Window.dimensions
     ]
 
