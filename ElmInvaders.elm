@@ -5,11 +5,17 @@ import Graphics.Collage exposing (..)
 import Graphics.Element exposing (..)
 import Window
 import Color
+import Time
 
 -- general functions
 addTuples : (Int, Int) -> (Int, Int) -> (Int, Int)
 addTuples (a, b) (c, d) =
   (a + c, b + d)
+
+inScreen : (Int, Int) -> (Int, Int) -> Bool
+inScreen (w, h) (x, y) =
+  if y < h then True
+  else False
 
 -- objects & their wiggeling functions
 type alias Game =
@@ -25,7 +31,7 @@ type alias Player =
 type alias Ship =
   { position : (Int, Int)}
 
-type Action = Click | Movement (Int, Int) | Resize (Int, Int)
+type Action = Click | Movement (Int, Int) | Resize (Int, Int) | Timer
 
 defaultGame : Game
 defaultGame =
@@ -76,9 +82,13 @@ update action oldGame =
       { oldGame
       | ship <- Ship newPosition
       }
-    Resize  newSize->
+    Resize  newSize ->
       { oldGame
       | window <- newSize
+      }
+    Timer ->
+      { oldGame
+      | shots <- List.filter (inScreen oldGame.window) (List.map (addTuples (0, 1)) oldGame.shots)
       }
 
 --- INPUTS
@@ -89,6 +99,7 @@ inputs =
     [ Signal.map (always Click) Mouse.clicks
     , Signal.map Movement (Signal.map2 convert Window.dimensions Mouse.position)
     , Signal.map Resize Window.dimensions
+    , Signal.map (always Timer) (Time.fps 30)
     ]
 
 state : Signal Game
