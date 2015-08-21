@@ -6,6 +6,10 @@ import Graphics.Element exposing (..)
 import Window
 import Color
 
+-- general functions
+addTuples : (Int, Int) -> (Int, Int) -> (Int, Int)
+addTuples (a, b) (c, d) =
+  (a + c, b + d)
 
 -- objects & their wiggeling functions
 type alias Game =
@@ -66,7 +70,7 @@ update action oldGame =
   case action of
     Click ->
       { oldGame
-      | shots <- oldGame.ship.position :: oldGame.shots
+      | shots <- (addTuples oldGame.ship.position (0, 15)) :: oldGame.shots
       }
     Movement newPosition ->
       { oldGame
@@ -77,6 +81,8 @@ update action oldGame =
       | window <- newSize
       }
 
+--- INPUTS
+-- organize inputs
 inputs : Signal Action
 inputs =
   Signal.mergeMany
