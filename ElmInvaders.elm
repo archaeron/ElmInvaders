@@ -23,7 +23,10 @@ type alias Game =
   , ship : Ship
   , shots : List (Int, Int)
   , window : (Int, Int)
-  , enemies : List (Int, Int)}
+  , enemies : List (Int, Int)
+  , shift : Shift
+  , shifted : Int
+  , level : Level}
 
 type alias Player =
   { score : Int
@@ -32,7 +35,11 @@ type alias Player =
 type alias Ship =
   { position : (Int, Int)}
 
-type Action = Click | Movement (Int, Int) | Resize (Int, Int) | Timer
+type Action = Click | Movement (Int, Int) | Resize (Int, Int) | ShotTimer | EnemyTimer
+
+type Shift = Left | None | Right
+
+type Level = One | Boss
 
 defaultGame : Game
 defaultGame =
@@ -40,7 +47,10 @@ defaultGame =
   , ship = Ship (0, 0)
   , shots = []
   , window = (0,0)
-  , enemies = [(0,0)]}
+  , enemies = createEnemies 7 4
+  , shift = Left
+  , shifted = 0
+  , level = One}
 
 ball : Int -> Int -> Form
 ball vx vy =
@@ -52,6 +62,30 @@ ball vx vy =
 convert : (Int, Int) -> (Int, Int) -> (Int, Int)
 convert (w, h) (vx, vy) =
   (vx - w // 2, 15 - h // 2)
+
+createEnemies : Int -> Int -> List (Int, Int)
+createEnemies x y =
+  List.append (List.map intToTupleX (positionEnemyX x)) (List.map intToTupleY (positionEnemyY y))
+
+positionEnemyX : Int -> List Int
+positionEnemyX x =
+  List.map multList [-((x-1)//2)..((x-1)//2)]
+
+positionEnemyY : Int -> List Int
+positionEnemyY y =
+  List.map multList [0..y]
+
+multList : Int -> Int
+multList a =
+  a * 75
+
+intToTupleX : Int -> (Int, Int)
+intToTupleX a =
+  (a, 0)
+
+intToTupleY : Int -> (Int, Int)
+intToTupleY b =
+  (0, b)
 
 ---VIEW
 -- create shown Element
@@ -79,6 +113,32 @@ view (w, h) game =
     (List.map viewShot game.shots)) ++ (List.map viewEnemy game.enemies))
 
 --- UPDATE
+-- update Enemy position
+wiggle : Game -> Game
+wiggle oldGame =
+  case oldGame.shift of
+    Left ->
+      { oldGame
+      | enemies <- List.map (addTuples (-5, 0)) oldGame.enemies
+      , shifted <- (oldGame.shifted - 1)
+      }
+    Right ->
+      { oldGame
+      | enemies <- List.map (addTuples (5, 0)) oldGame.enemies
+      , shifted <- (oldGame.shifted + 1)
+      }
+    None ->
+      { oldGame
+      | enemies <- oldGame.enemies
+      }
+changeShift : Game -> Game
+changeShift oldGame =
+  { oldGame
+  | shift <- if | oldGame.shifted == -5 -> Right
+                | oldGame.shifted == 5 -> Left
+                | otherwise -> oldGame.shift
+  }
+
 -- update view after event
 update : Action -> Game -> Game
 update action oldGame =
@@ -95,10 +155,12 @@ update action oldGame =
       { oldGame
       | window <- newSize
       }
-    Timer ->
+    ShotTimer ->
       { oldGame
       | shots <- List.filter (inScreen oldGame.window) (List.map (addTuples (0, 1)) oldGame.shots)
       }
+    EnemyTimer ->
+      wiggle (changeShift oldGame)
 
 --- INPUTS
 -- organize inputs
@@ -108,7 +170,8 @@ inputs =
     [ Signal.map (always Click) Mouse.clicks
     , Signal.map Movement (Signal.map2 convert Window.dimensions Mouse.position)
     , Signal.map Resize Window.dimensions
-    , Signal.map (always Timer) (Time.fps 30)
+    , Signal.map (always ShotTimer) (Time.fps 30)
+    , Signal.map (always EnemyTimer) (Time.fps 1)
     ]
 
 state : Signal Game
