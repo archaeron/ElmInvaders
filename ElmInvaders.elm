@@ -14,7 +14,7 @@ addTuples (a, b) (c, d) =
 
 inScreen : (Int, Int) -> (Int, Int) -> Bool
 inScreen (w, h) (x, y) =
-  if y < h then True
+  if y < 800 then True
   else False
 
 -- objects & their wiggeling functions
@@ -22,7 +22,8 @@ type alias Game =
   { defender : Player
   , ship : Ship
   , shots : List (Int, Int)
-  , window : (Int, Int)}
+  , window : (Int, Int)
+  , enemies : List (Int, Int)}
 
 type alias Player =
   { score : Int
@@ -38,7 +39,8 @@ defaultGame =
   { defender = Player 0 10
   , ship = Ship (0, 0)
   , shots = []
-  , window = (10,10)}
+  , window = (0,0)
+  , enemies = [(0,0)]}
 
 ball : Int -> Int -> Form
 ball vx vy =
@@ -60,14 +62,21 @@ viewShip (vx, vy) =
   |> move (toFloat vx, toFloat vy)
 
 viewShot : (Int, Int) -> Form
-viewShot (x, y)=
+viewShot (x, y) =
   rect 5 5
   |> filled Color.purple
   |> move (toFloat x, toFloat y)
 
+viewEnemy : (Int, Int) -> Form
+viewEnemy (vx, vy) =
+  image 40 30 "images/Invader.png"
+  |> toForm
+  |> move (toFloat vx, toFloat vy)
+
 view : (Int, Int) -> Game -> Element
 view (w, h) game =
-  collage w h (viewShip game.ship.position :: (List.map viewShot game.shots))
+  collage w h ((viewShip game.ship.position ::
+    (List.map viewShot game.shots)) ++ (List.map viewEnemy game.enemies))
 
 --- UPDATE
 -- update view after event
