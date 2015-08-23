@@ -26,7 +26,8 @@ type alias Game =
   , enemies : List (Int, Int)
   , shift : Shift
   , shifted : Int
-  , level : Level}
+  , level : Level
+  , shield : List (Int, Int)}
 
 type alias Player =
   { score : Int
@@ -50,7 +51,8 @@ defaultGame =
   , enemies = createEnemies 7 4
   , shift = Left
   , shifted = 0
-  , level = One}
+  , level = One
+  , shield = [(0, -100), (-200, -100), (200, -100)]}
 
 ball : Int -> Int -> Form
 ball vx vy =
@@ -107,10 +109,16 @@ viewEnemy (vx, vy) =
   |> toForm
   |> move (toFloat vx, toFloat vy)
 
+viewShield : (Int, Int) -> Form
+viewShield (x, y) =
+  image 40 30 "images/shield.png"
+  |> toForm
+  |> move (toFloat x, toFloat y)
+
 view : (Int, Int) -> Game -> Element
 view (w, h) game =
   collage w h ((viewShip game.ship.position ::
-    (List.map viewShot game.shots)) ++ (List.map viewEnemy game.enemies))
+    (List.map viewShot game.shots)) ++ (List.map viewEnemy game.enemies) ++ (List.map viewShield game.shield))
 
 --- UPDATE
 -- update Enemy position
