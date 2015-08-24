@@ -26,7 +26,6 @@ type alias Game =
     , invaders : List (Int, Int)
     , shift : Shift
     , shifted : Int
-    , level : Level
     , shield : List (Int, Int)
     }
 
@@ -65,7 +64,6 @@ defaultGame =
     , invaders = createInvader 7 4
     , shift = Left
     , shifted = 0
-    , level = One
     , shield = [(0, -100), (-200, -100), (200, -100)]
     }
 
