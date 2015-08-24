@@ -16,13 +16,14 @@ inScreen : (Int, Int) -> (Int, Int) -> Bool
 inScreen (w, h) (x, y) =
     y < 800
 
--- objects & their wiggeling functions
+-- TYPES
+
 type alias Game =
     { defender : Player
     , ship : Ship
     , shots : List (Int, Int)
     , window : (Int, Int)
-    , enemies : List (Int, Int)
+    , invaders : List (Int, Int)
     , shift : Shift
     , shifted : Int
     , level : Level
@@ -38,11 +39,26 @@ type alias Ship =
     { position : (Int, Int)
     }
 
-type Action = Click | Movement (Int, Int) | Resize (Int, Int) | ShotTimer | EnemyTimer
+type Action
+    = Click
+    | Movement (Int, Int)
+    | Resize (Int, Int)
+    | ShotTimer
+    | EnemyTimer
 
-type Shift = Left | None | Right
+type Shift
+    = Left
+    | None
+    | Right
 
-type Level = One | Boss
+type Level
+    = One
+    | Boss
+
+-- INIT
+
+invaderWidth = 40
+invaderHeight = 30
 
 defaultGame : Game
 defaultGame =
@@ -50,33 +66,28 @@ defaultGame =
     , ship = Ship (0, 0)
     , shots = []
     , window = (0,0)
-    , enemies = createEnemies 7 4
+    , invaders = createInvader 7 4
     , shift = Left
     , shifted = 0
     , level = One
-    , shield = [(0, -100), (-200, -100), (200, -100)]}
+    , shield = [(0, -100), (-200, -100), (200, -100)]
+    }
 
-ball : Int -> Int -> Form
-ball vx vy =
-    circle 5.0
-    |> filled Color.blue
-    |> move (toFloat vx, toFloat vy)
+createInvader : Int -> Int -> List (Int, Int)
+createInvader x y =
+    List.append (List.map intToTupleX (positionInvaderX x)) (List.map intToTupleY (positionInvaderY y))
 
 -- correct for Mouse <-> Collage discrepancy in NUll-points
 convert : (Int, Int) -> (Int, Int) -> (Int, Int)
 convert (w, h) (vx, vy) =
     (vx - w // 2, 15 - h // 2)
 
-createEnemies : Int -> Int -> List (Int, Int)
-createEnemies x y =
-    List.append (List.map intToTupleX (positionEnemyX x)) (List.map intToTupleY (positionEnemyY y))
-
-positionEnemyX : Int -> List Int
-positionEnemyX x =
+positionInvaderX : Int -> List Int
+positionInvaderX x =
     List.map multList [-((x-1)//2)..((x-1)//2)]
 
-positionEnemyY : Int -> List Int
-positionEnemyY y =
+positionInvaderY : Int -> List Int
+positionInvaderY y =
     List.map multList [0..y]
 
 multList : Int -> Int
@@ -93,6 +104,12 @@ intToTupleY b =
 
 ---VIEW
 -- create shown Element
+ball : Int -> Int -> Form
+ball vx vy =
+    circle 5.0
+    |> filled Color.blue
+    |> move (toFloat vx, toFloat vy)
+
 viewShip : (Int, Int) -> Form
 viewShip (vx, vy) =
     image 40 30 "images/Ship.png"
@@ -105,8 +122,8 @@ viewShot (x, y) =
     |> filled Color.purple
     |> move (toFloat x, toFloat y)
 
-viewEnemy : (Int, Int) -> Form
-viewEnemy (vx, vy) =
+viewInvader : (Int, Int) -> Form
+viewInvader (vx, vy) =
     image 40 30 "images/Invader.png"
     |> toForm
     |> move (toFloat vx, toFloat vy)
@@ -120,7 +137,7 @@ viewShield (x, y) =
 view : (Int, Int) -> Game -> Element
 view (w, h) game =
     collage w h ((viewShip game.ship.position ::
-        (List.map viewShot game.shots)) ++ (List.map viewEnemy game.enemies) ++ (List.map viewShield game.shield))
+        (List.map viewShot game.shots)) ++ (List.map viewInvader game.invaders) ++ (List.map viewShield game.shield))
 
 --- UPDATE
 -- update Enemy position
@@ -129,12 +146,12 @@ wiggle oldGame =
     case oldGame.shift of
         Left ->
             { oldGame
-            | enemies <- List.map (addTuples (-5, 0)) oldGame.enemies
+            | invaders <- List.map (addTuples (-5, 0)) oldGame.invaders
             , shifted <- (oldGame.shifted - 1)
             }
         Right ->
             { oldGame
-            | enemies <- List.map (addTuples (5, 0)) oldGame.enemies
+            | invaders <- List.map (addTuples (5, 0)) oldGame.invaders
             , shifted <- (oldGame.shifted + 1)
             }
         None ->
@@ -143,9 +160,11 @@ wiggle oldGame =
 changeShift : Game -> Game
 changeShift oldGame =
     { oldGame
-    | shift <- if | oldGame.shifted == -5 -> Right
-                                | oldGame.shifted == 5 -> Left
-                                | otherwise -> oldGame.shift
+    | shift <-
+        if
+            | oldGame.shifted == -5 -> Right
+            | oldGame.shifted == 5 -> Left
+            | otherwise -> oldGame.shift
     }
 
 -- update view after event
