@@ -227,8 +227,7 @@ update action oldGame =
                     |> List.map (moveBy (0, 3))
                     |> List.filter (inScreen oldGame.window)
                 invaders =
-                    List.map (doesntCollideWith shots) oldGame.invaders
-                    |> List.filterMap identity
+                    List.filterMap (doesntCollideWith shots) oldGame.invaders
             in
                 { oldGame
                 | shots <- shots
