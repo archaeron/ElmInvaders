@@ -65,7 +65,7 @@ defaultGame =
     { defender = Player 0 10
     , ship = Ship (0, 0)
     , shots = []
-    , window = (0,0)
+    , window = (0, 0)
     , invaders = createInvader 7 4
     , shift = Left
     , shifted = 0
@@ -102,19 +102,20 @@ intToTupleY : Int -> (Int, Int)
 intToTupleY b =
     (0, b)
 
----VIEW
 -- create shown Element
 ball : Int -> Int -> Form
 ball vx vy =
     circle 5.0
     |> filled Color.blue
     |> move (toFloat vx, toFloat vy)
+---VIEWS
+
 
 viewShip : (Int, Int) -> Form
-viewShip (vx, vy) =
+viewShip (x, y) =
     image 40 30 "images/Ship.png"
     |> toForm
-    |> move (toFloat vx, toFloat vy)
+    |> move (toFloat x, toFloat y)
 
 viewShot : (Int, Int) -> Form
 viewShot (x, y) =
@@ -158,13 +159,14 @@ wiggle oldGame =
             oldGame
 
 changeShift : Game -> Game
-changeShift oldGame =
-    { oldGame
+changeShift game =
+    { game
     | shift <-
-        if
-            | oldGame.shifted == -5 -> Right
-            | oldGame.shifted == 5 -> Left
-            | otherwise -> oldGame.shift
+        case game.shifted of
+            -5 -> Right
+            5 -> Left
+            _ -> game.shift
+    }
     }
 
 -- update view after event
