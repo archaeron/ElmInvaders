@@ -161,7 +161,6 @@ changeShift game =
             5 -> Left
             _ -> game.shift
     }
-    }
 
 -- update view after event
 update : Action -> Game -> Game
