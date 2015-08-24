@@ -102,12 +102,6 @@ intToTupleY : Int -> (Int, Int)
 intToTupleY b =
     (0, b)
 
--- create shown Element
-ball : Int -> Int -> Form
-ball vx vy =
-    circle 5.0
-    |> filled Color.blue
-    |> move (toFloat vx, toFloat vy)
 ---VIEWS
 
 
