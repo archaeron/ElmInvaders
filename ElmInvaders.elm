@@ -12,16 +12,28 @@ addTuples : (Int, Int) -> (Int, Int) -> (Int, Int)
 addTuples (a, b) (c, d) =
     (a + c, b + d)
 
-inScreen : (Int, Int) -> (Int, Int) -> Bool
-inScreen (w, h) (x, y) =
-    y < 800
+inScreen : (Int, Int) -> Positioned a -> Bool
+inScreen (w, h) positioned =
+    positioned.y < 800
 
 -- TYPES
+
+type alias Positioned a =
+    { a
+    | x : Int
+    , y : Int
+    , width : Int
+    , height : Int
+    }
+
+type alias Shot = Positioned {}
+
+type alias Ship = Positioned {}
 
 type alias Game =
     { defender : Player
     , ship : Ship
-    , shots : List (Int, Int)
+    , shots : List Shot
     , window : (Int, Int)
     , invaders : List (Int, Int)
     , shift : Shift
@@ -32,10 +44,6 @@ type alias Game =
 type alias Player =
     { score : Int
     , lives : Int
-    }
-
-type alias Ship =
-    { position : (Int, Int)
     }
 
 type Action
@@ -58,7 +66,7 @@ invaderHeight = 30
 defaultGame : Game
 defaultGame =
     { defender = Player 0 10
-    , ship = Ship (0, 0)
+    , ship = createShip 0 0
     , shots = []
     , window = (0, 0)
     , invaders = createInvader 7 4
@@ -70,6 +78,21 @@ defaultGame =
 createInvader : Int -> Int -> List (Int, Int)
 createInvader x y =
     List.append (List.map intToTupleX (positionInvaderX x)) (List.map intToTupleY (positionInvaderY y))
+
+createShot : Int -> Int -> Shot
+createShot x y =
+    { x = x
+    , y = y
+    , width = 5
+    , height = 5
+    }
+
+createShip x y =
+    { x = x
+    , y = y
+    , width = 40
+    , height = 30
+    }
 
 -- correct for Mouse <-> Collage discrepancy in NUll-points
 convert : (Int, Int) -> (Int, Int) -> (Int, Int)
@@ -98,18 +121,21 @@ intToTupleY b =
 
 ---VIEWS
 
+movePositioned : Positioned a -> Form -> Form
+movePositioned positioned =
+    move (toFloat positioned.x, toFloat positioned.y)
 
-viewShip : (Int, Int) -> Form
-viewShip (x, y) =
-    image 40 30 "images/Ship.png"
+viewShip : Ship -> Form
+viewShip ship =
+    image ship.width ship.height "images/Ship.png"
     |> toForm
-    |> move (toFloat x, toFloat y)
+    |> movePositioned ship
 
-viewShot : (Int, Int) -> Form
-viewShot (x, y) =
-    rect 5 5
+viewShot : Shot -> Form
+viewShot shot =
+    rect (toFloat shot.width) (toFloat shot.height)
     |> filled Color.purple
-    |> move (toFloat x, toFloat y)
+    |> movePositioned shot
 
 viewInvader : (Int, Int) -> Form
 viewInvader (vx, vy) =
@@ -126,7 +152,7 @@ viewShield (x, y) =
 view : (Int, Int) -> Game -> Element
 view (w, h) game =
     let
-        defender = viewShip game.ship.position
+        defender = viewShip game.ship
         shots = List.map viewShot game.shots
         invaders = List.map viewInvader game.invaders
         shields = List.map viewShield game.shield
@@ -161,28 +187,45 @@ changeShift game =
             _ -> game.shift
     }
 
+moveBy : (Int, Int) -> Positioned a -> Positioned a
+moveBy (x, y) positioned =
+    { positioned
+    | x <- positioned.x + x
+    , y <- positioned.y + y
+    }
+
 -- update view after event
 update : Action -> Game -> Game
 update action oldGame =
     case action of
         Click ->
             { oldGame
-            | shots <- (addTuples oldGame.ship.position (0, 15)) :: oldGame.shots
+            | shots <-
+                (createShot oldGame.ship.x (oldGame.ship.y + 15))
+                    :: oldGame.shots
             }
-        Movement newPosition ->
+        Movement (x, y) ->
             { oldGame
-            | ship <- Ship newPosition
+            | ship <- createShip x y
             }
         Resize    newSize ->
             { oldGame
             | window <- newSize
             }
         Tick ->
-            { oldGame
-            | shots <- List.filter (inScreen oldGame.window) (List.map (addTuples (0, 3)) oldGame.shots)
-            }
+            let
+                shots =
+                    oldGame.shots
+                    |> List.map (moveBy (0, 3))
+                    |> List.filter (inScreen oldGame.window)
+            in
+                { oldGame
+                | shots <- shots
+                }
         EnemyTimer ->
-            wiggle (changeShift oldGame)
+            oldGame
+            |> changeShift
+            |> wiggle
 
 --- INPUTS
 -- organize inputs
