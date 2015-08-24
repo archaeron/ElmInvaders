@@ -51,10 +51,6 @@ type Shift
     | None
     | Right
 
-type Level
-    = One
-    | Boss
-
 -- INIT
 
 invaderWidth = 40
