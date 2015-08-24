@@ -125,8 +125,13 @@ viewShield (x, y) =
 
 view : (Int, Int) -> Game -> Element
 view (w, h) game =
-    collage w h ((viewShip game.ship.position ::
-        (List.map viewShot game.shots)) ++ (List.map viewInvader game.invaders) ++ (List.map viewShield game.shield))
+    let
+        defender = viewShip game.ship.position
+        shots = List.map viewShot game.shots
+        invaders = List.map viewInvader game.invaders
+        shields = List.map viewShield game.shield
+    in
+        collage w h (defender :: shots ++ invaders ++ shields)
 
 --- UPDATE
 -- update Enemy position
