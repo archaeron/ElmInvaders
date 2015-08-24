@@ -17,6 +17,23 @@ inScreen (w, h) (x, y) =
   if y < 800 then True
   else False
 
+-- correct for Mouse <-> Collage discrepancy in NUll-points
+convert : (Int, Int) -> (Int, Int) -> (Int, Int)
+convert (w, h) (vx, vy) =
+  (vx - w // 2, 15 - h // 2)
+
+
+-- position enemies matrix-like -> save positions in List
+-- to do !
+createEnemies : Int -> Int -> List (Int, Int)
+createEnemies x y =
+  [(0,0),(-100,0),(-200,0),(100,0),(200,0),(0,100),(-100,100),(-200,100),(100,100),(200,100),(0,200),(-100,200),(-200,200),(100,200),(200,200)]
+
+-- positions shields 50 px above the ship
+position : (Int, Int) -> (Int, Int) -> (Int, Int)
+position (x, y) (ex, ey)=
+  (ex, y + 50)
+
 -- objects & their wiggeling functions
 type alias Game =
   { defender : Player
@@ -45,7 +62,7 @@ type Level = One | Boss
 defaultGame : Game
 defaultGame =
   { defender = Player 0 10
-  , ship = Ship (0, 0)
+  , ship = Ship (0, -200)
   , shots = []
   , window = (0,0)
   , enemies = createEnemies 7 4
@@ -59,35 +76,6 @@ ball vx vy =
   circle 5.0
   |> filled Color.blue
   |> move (toFloat vx, toFloat vy)
-
--- correct for Mouse <-> Collage discrepancy in NUll-points
-convert : (Int, Int) -> (Int, Int) -> (Int, Int)
-convert (w, h) (vx, vy) =
-  (vx - w // 2, 15 - h // 2)
-
-createEnemies : Int -> Int -> List (Int, Int)
-createEnemies x y =
-  List.append (List.map intToTupleX (positionEnemyX x)) (List.map intToTupleY (positionEnemyY y))
-
-positionEnemyX : Int -> List Int
-positionEnemyX x =
-  List.map multList [-((x-1)//2)..((x-1)//2)]
-
-positionEnemyY : Int -> List Int
-positionEnemyY y =
-  List.map multList [0..y]
-
-multList : Int -> Int
-multList a =
-  a * 75
-
-intToTupleX : Int -> (Int, Int)
-intToTupleX a =
-  (a, 0)
-
-intToTupleY : Int -> (Int, Int)
-intToTupleY b =
-  (0, b)
 
 ---VIEW
 -- create shown Element
@@ -115,10 +103,15 @@ viewShield (x, y) =
   |> toForm
   |> move (toFloat x, toFloat y)
 
+viewBg : Int -> Int -> Form
+viewBg w h =
+  image w h "images/bg.png"
+  |> toForm
+
 view : (Int, Int) -> Game -> Element
 view (w, h) game =
-  collage w h ((viewShip game.ship.position ::
-    (List.map viewShot game.shots)) ++ (List.map viewEnemy game.enemies) ++ (List.map viewShield game.shield))
+  collage w h ((viewBg w h :: (List.map viewEnemy game.enemies)) ++ (viewShip game.ship.position ::
+    (List.map viewShot game.shots)) ++ (List.map viewShield game.shield))
 
 --- UPDATE
 -- update Enemy position
@@ -158,6 +151,7 @@ update action oldGame =
     Movement newPosition ->
       { oldGame
       | ship <- Ship newPosition
+      , shield <- List.map (position newPosition) oldGame.shield
       }
     Resize  newSize ->
       { oldGame
