@@ -43,7 +43,7 @@ type Action
     = Click
     | Movement (Int, Int)
     | Resize (Int, Int)
-    | ShotTimer
+    | Tick
     | EnemyTimer
 
 type Shift
@@ -183,7 +183,7 @@ update action oldGame =
             { oldGame
             | window <- newSize
             }
-        ShotTimer ->
+        Tick ->
             { oldGame
             | shots <- List.filter (inScreen oldGame.window) (List.map (addTuples (0, 3)) oldGame.shots)
             }
@@ -198,7 +198,7 @@ inputs =
         [ Signal.map (always Click) Mouse.clicks
         , Signal.map Movement (Signal.map2 convert Window.dimensions Mouse.position)
         , Signal.map Resize Window.dimensions
-        , Signal.map (always ShotTimer) (Time.fps 30)
+        , Signal.map (always Tick) (Time.fps 30)
         , Signal.map (always EnemyTimer) (Time.fps 1)
         ]
 
