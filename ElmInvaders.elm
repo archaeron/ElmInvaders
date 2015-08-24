@@ -94,9 +94,11 @@ createShot : Int -> Int -> Shot
 createShot =
     createPositioned 5 5
 
+createShip : Int -> Int -> Ship
 createShip =
     createPositioned 40 30
 
+createInvader : Int -> Int -> Invader
 createInvader =
     createPositioned 40 30
 
