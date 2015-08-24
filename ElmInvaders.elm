@@ -30,12 +30,14 @@ type alias Shot = Positioned {}
 
 type alias Ship = Positioned {}
 
+type alias Invader = Positioned {}
+
 type alias Game =
     { defender : Player
     , ship : Ship
     , shots : List Shot
     , window : (Int, Int)
-    , invaders : List (Int, Int)
+    , invaders : List Invader
     , shift : Shift
     , shifted : Int
     , shield : List (Int, Int)
@@ -69,15 +71,16 @@ defaultGame =
     , ship = createShip 0 0
     , shots = []
     , window = (0, 0)
-    , invaders = createInvader 7 4
+    , invaders = createInvaders 7 4
     , shift = Left
     , shifted = 0
     , shield = [(0, -100), (-200, -100), (200, -100)]
     }
 
-createInvader : Int -> Int -> List (Int, Int)
-createInvader x y =
+createInvaders : Int -> Int -> List Invader
+createInvaders x y =
     List.append (List.map intToTupleX (positionInvaderX x)) (List.map intToTupleY (positionInvaderY y))
+    |> List.map (\(x, y) -> createInvader x y)
 
 createShot : Int -> Int -> Shot
 createShot x y =
@@ -88,6 +91,13 @@ createShot x y =
     }
 
 createShip x y =
+    { x = x
+    , y = y
+    , width = 40
+    , height = 30
+    }
+
+createInvader x y =
     { x = x
     , y = y
     , width = 40
@@ -137,11 +147,11 @@ viewShot shot =
     |> filled Color.purple
     |> movePositioned shot
 
-viewInvader : (Int, Int) -> Form
-viewInvader (vx, vy) =
-    image 40 30 "images/Invader.png"
+viewInvader : Invader -> Form
+viewInvader invader =
+    image invader.width invader.height "images/Invader.png"
     |> toForm
-    |> move (toFloat vx, toFloat vy)
+    |> movePositioned invader
 
 viewShield : (Int, Int) -> Form
 viewShield (x, y) =
@@ -166,12 +176,12 @@ wiggle game =
     case game.shift of
         Left ->
             { game
-            | invaders <- List.map (addTuples (-5, 0)) game.invaders
+            | invaders <- List.map (moveBy (-5, 0)) game.invaders
             , shifted <- (game.shifted - 1)
             }
         Right ->
             { game
-            | invaders <- List.map (addTuples (5, 0)) game.invaders
+            | invaders <- List.map (moveBy (5, 0)) game.invaders
             , shifted <- (game.shifted + 1)
             }
         None ->
