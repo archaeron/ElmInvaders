@@ -240,13 +240,23 @@ update action oldGame =
 
 -- COLLISION
 
-collides : Positioned a -> Positioned b -> Bool
-collides a b =
-    False
+notCollides : Positioned a -> Positioned b -> Bool
+notCollides a b =
+    let
+        ax1 = a.x
+        ay1 = a.y
+        bx1 = b.x
+        by1 = b.y
+        ax2 = ax1 + a.width
+        ay2 = ay1 + a.height
+        bx2 = bx1 + b.width
+        by2 = by1 + b.height
+    in
+        (ax1 > bx2) || (ax2 < bx1) || (ay1 > by2) || (ay2 < by1)
 
 doesntCollideWith : List (Positioned a) -> Positioned b -> Maybe (Positioned b)
 doesntCollideWith shots ship =
-    if not (List.any (collides ship) shots)
+    if List.all (notCollides ship) shots
     then Just ship
     else Nothing
 
