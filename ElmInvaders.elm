@@ -82,27 +82,23 @@ createInvaders x y =
     List.append (List.map intToTupleX (positionInvaderX x)) (List.map intToTupleY (positionInvaderY y))
     |> List.map (\(x, y) -> createInvader x y)
 
+createPositioned : Int -> Int -> Int -> Int -> Positioned {}
+createPositioned width height x y =
+    { x = x
+    , y = y
+    , width = width
+    , height = height
+    }
+
 createShot : Int -> Int -> Shot
-createShot x y =
-    { x = x
-    , y = y
-    , width = 5
-    , height = 5
-    }
+createShot =
+    createPositioned 5 5
 
-createShip x y =
-    { x = x
-    , y = y
-    , width = 40
-    , height = 30
-    }
+createShip =
+    createPositioned 40 30
 
-createInvader x y =
-    { x = x
-    , y = y
-    , width = 40
-    , height = 30
-    }
+createInvader =
+    createPositioned 40 30
 
 -- correct for Mouse <-> Collage discrepancy in NUll-points
 convert : (Int, Int) -> (Int, Int) -> (Int, Int)
