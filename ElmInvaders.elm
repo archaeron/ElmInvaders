@@ -137,20 +137,20 @@ view (w, h) game =
 --- UPDATE
 -- update Enemy position
 wiggle : Game -> Game
-wiggle oldGame =
-    case oldGame.shift of
+wiggle game =
+    case game.shift of
         Left ->
-            { oldGame
-            | invaders <- List.map (addTuples (-5, 0)) oldGame.invaders
-            , shifted <- (oldGame.shifted - 1)
+            { game
+            | invaders <- List.map (addTuples (-5, 0)) game.invaders
+            , shifted <- (game.shifted - 1)
             }
         Right ->
-            { oldGame
-            | invaders <- List.map (addTuples (5, 0)) oldGame.invaders
-            , shifted <- (oldGame.shifted + 1)
+            { game
+            | invaders <- List.map (addTuples (5, 0)) game.invaders
+            , shifted <- (game.shifted + 1)
             }
         None ->
-            oldGame
+            game
 
 changeShift : Game -> Game
 changeShift game =
