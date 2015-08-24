@@ -228,14 +228,30 @@ update action oldGame =
                     oldGame.shots
                     |> List.map (moveBy (0, 3))
                     |> List.filter (inScreen oldGame.window)
+                invaders =
+                    List.map (doesntCollideWith shots) oldGame.invaders
+                    |> List.filterMap identity
             in
                 { oldGame
                 | shots <- shots
+                , invaders <- invaders
                 }
         EnemyTimer ->
             oldGame
             |> changeShift
             |> wiggle
+
+-- COLLISION
+
+collides : Positioned a -> Positioned b -> Bool
+collides a b =
+    False
+
+doesntCollideWith : List (Positioned a) -> Positioned b -> Maybe (Positioned b)
+doesntCollideWith shots ship =
+    if not (List.any (collides ship) shots)
+    then Just ship
+    else Nothing
 
 --- INPUTS
 -- organize inputs
