@@ -38,7 +38,7 @@ position (x, y) (ex, ey)=
 type alias Game =
   { defender : Player
   , ship : Ship
-  , shots : List (Int, Int)
+  , shotsShip : List (Int, Int)
   , window : (Int, Int)
   , enemies : List (Int, Int)
   , shift : Shift
@@ -63,7 +63,7 @@ defaultGame : Game
 defaultGame =
   { defender = Player 0 10
   , ship = Ship (0, -200)
-  , shots = []
+  , shotsShip = []
   , window = (0,0)
   , enemies = createEnemies 7 4
   , shift = Left
@@ -111,7 +111,7 @@ viewBg w h =
 view : (Int, Int) -> Game -> Element
 view (w, h) game =
   collage w h ((viewBg w h :: (List.map viewEnemy game.enemies)) ++ (viewShip game.ship.position ::
-    (List.map viewShot game.shots)) ++ (List.map viewShield game.shield))
+    (List.map viewShot game.shotsShip)) ++ (List.map viewShield game.shield))
 
 --- UPDATE
 -- update Enemy position
@@ -132,6 +132,7 @@ wiggle oldGame =
       { oldGame
       | enemies <- oldGame.enemies
       }
+
 changeShift : Game -> Game
 changeShift oldGame =
   { oldGame
@@ -140,13 +141,25 @@ changeShift oldGame =
                 | otherwise -> oldGame.shift
   }
 
+--- COLLISION
+-- returns True of there is no collision, False otherwise
+noCollision : List (Int, Int) -> (Int, Int) -> Bool
+noCollision shotsShip object =
+  if List.member True (List.map2 collisionList shotsShip (List.repeat (List.length shotsShip) object)) then False
+    else True
+
+collisionList : (Int, Int) -> (Int, Int) -> Bool
+collisionList (sx, sy) (ox, oy) =
+  if ox - 20 < sx && sx < ox + 20 && oy - 15 < sy && sy < oy + 15 then True
+    else False
+
 -- update view after event
 update : Action -> Game -> Game
 update action oldGame =
   case action of
     Click ->
       { oldGame
-      | shots <- (addTuples oldGame.ship.position (0, 15)) :: oldGame.shots
+      | shotsShip <- (addTuples oldGame.ship.position (0, 15)) :: oldGame.shotsShip
       }
     Movement newPosition ->
       { oldGame
@@ -159,7 +172,9 @@ update action oldGame =
       }
     ShotTimer ->
       { oldGame
-      | shots <- List.filter (inScreen oldGame.window) (List.map (addTuples (0, 1)) oldGame.shots)
+      | enemies <- List.filter (noCollision (List.map (addTuples (0, 1)) oldGame.shotsShip)) oldGame.enemies
+      , shield <- List.filter (noCollision (List.map (addTuples (0, 1)) oldGame.shotsShip)) oldGame.shield
+      , shotsShip <- List.filter (noCollision (oldGame.enemies ++ oldGame.shield)) (List.filter (inScreen oldGame.window) (List.map (addTuples (0, 1)) oldGame.shotsShip))
       }
     EnemyTimer ->
       wiggle (changeShift oldGame)
