@@ -6,15 +6,20 @@ import Graphics.Element exposing (..)
 import Window
 import Color
 import Time
+import Random
+import Array
+import Random.Array
 
--- general functions
+--- GENERAL FUNCTIONS
+-- addition of tuples
 addTuples : (Int, Int) -> (Int, Int) -> (Int, Int)
 addTuples (a, b) (c, d) =
   (a + c, b + d)
 
+-- check if a tuple b is in window tuple a !!not finished, window size from start missing!!
 inScreen : (Int, Int) -> (Int, Int) -> Bool
 inScreen (w, h) (x, y) =
-  if y < 800 then True
+  if y < 800 && y > -800 then True
   else False
 
 -- correct for Mouse <-> Collage discrepancy in NUll-points
@@ -22,9 +27,7 @@ convert : (Int, Int) -> (Int, Int) -> (Int, Int)
 convert (w, h) (vx, vy) =
   (vx - w // 2, 15 - h // 2)
 
-
 -- position enemies matrix-like -> save positions in List
--- to do !
 createEnemies : Int -> Int -> List (Int, Int)
 createEnemies x y =
   [(0,0),(-100,0),(-200,0),(100,0),(200,0),(0,100),(-100,100),(-200,100),(100,100),(200,100),(0,200),(-100,200),(-200,200),(100,200),(200,200)]
@@ -34,11 +37,35 @@ position : (Int, Int) -> (Int, Int) -> (Int, Int)
 position (x, y) (ex, ey)=
   (ex, y + 50)
 
+-- create position of new enemy shot
+newEnemyShot : List (Int, Int) -> Random.Seed -> List (Int, Int)
+newEnemyShot enemies seed =
+  takeSample (Random.Array.sample seed (Array.fromList enemies))
+
+takeSample : (Maybe (Int, Int), Random.Seed) -> List (Int, Int)
+takeSample (a, seed) =
+  case a of
+    Just a -> [a]
+    Nothing -> []
+
+-- create new seed for randomness
+newSeed : List (Int, Int) -> Random.Seed -> Random.Seed
+newSeed enemies seed =
+  extractSeed (Random.Array.sample seed (Array.fromList enemies))
+
+extractSeed : (Maybe (Int, Int), Random.Seed) -> Random.Seed
+extractSeed (a, seed) =
+  seed
+
+
+--- TYPE DEFINITIONS
 -- objects & their wiggeling functions
 type alias Game =
   { defender : Player
   , ship : Ship
   , shotsShip : List (Int, Int)
+  , shotsEnemies : List (Int, Int)
+  , seed : Random.Seed
   , window : (Int, Int)
   , enemies : List (Int, Int)
   , shift : Shift
@@ -53,17 +80,20 @@ type alias Player =
 type alias Ship =
   { position : (Int, Int)}
 
-type Action = Click | Movement (Int, Int) | Resize (Int, Int) | ShotTimer | EnemyTimer
+type Action = Click | Movement (Int, Int) | Resize (Int, Int) | ShotTimer | EnemyTimer | EnemyShotTimer
 
 type Shift = Left | None | Right
 
 type Level = One | Boss
 
+--- INITIALIZE VARIABLES
 defaultGame : Game
 defaultGame =
   { defender = Player 0 10
   , ship = Ship (0, -200)
   , shotsShip = []
+  , shotsEnemies = []
+  , seed = Random.initialSeed 8
   , window = (0,0)
   , enemies = createEnemies 7 4
   , shift = Left
@@ -77,7 +107,7 @@ ball vx vy =
   |> filled Color.blue
   |> move (toFloat vx, toFloat vy)
 
----VIEW
+---VIEW CREATION
 -- create shown Element
 viewShip : (Int, Int) -> Form
 viewShip (vx, vy) =
@@ -85,10 +115,16 @@ viewShip (vx, vy) =
   |> toForm
   |> move (toFloat vx, toFloat vy)
 
-viewShot : (Int, Int) -> Form
-viewShot (x, y) =
+viewFShot : (Int, Int) -> Form
+viewFShot (x, y) =
   rect 5 5
   |> filled Color.purple
+  |> move (toFloat x, toFloat y)
+
+viewEShot : (Int, Int) -> Form
+viewEShot (x, y) =
+  rect 5 5
+  |> filled Color.red
   |> move (toFloat x, toFloat y)
 
 viewEnemy : (Int, Int) -> Form
@@ -111,9 +147,9 @@ viewBg w h =
 view : (Int, Int) -> Game -> Element
 view (w, h) game =
   collage w h ((viewBg w h :: (List.map viewEnemy game.enemies)) ++ (viewShip game.ship.position ::
-    (List.map viewShot game.shotsShip)) ++ (List.map viewShield game.shield))
+    (List.map viewFShot game.shotsShip)) ++ (List.map viewShield game.shield) ++ (List.map viewEShot game.shotsEnemies))
 
---- UPDATE
+--- MOVEMENTS
 -- update Enemy position
 wiggle : Game -> Game
 wiggle oldGame =
@@ -133,6 +169,7 @@ wiggle oldGame =
       | enemies <- oldGame.enemies
       }
 
+-- change shifting direction of enemies
 changeShift : Game -> Game
 changeShift oldGame =
   { oldGame
@@ -153,6 +190,7 @@ collisionList (sx, sy) (ox, oy) =
   if ox - 20 < sx && sx < ox + 20 && oy - 15 < sy && sy < oy + 15 then True
     else False
 
+--- UPDATE GAME
 -- update view after event
 update : Action -> Game -> Game
 update action oldGame =
@@ -175,12 +213,17 @@ update action oldGame =
       | enemies <- List.filter (noCollision (List.map (addTuples (0, 1)) oldGame.shotsShip)) oldGame.enemies
       , shield <- List.filter (noCollision (List.map (addTuples (0, 1)) oldGame.shotsShip)) oldGame.shield
       , shotsShip <- List.filter (noCollision (oldGame.enemies ++ oldGame.shield)) (List.filter (inScreen oldGame.window) (List.map (addTuples (0, 1)) oldGame.shotsShip))
+      , shotsEnemies <- List.filter (noCollision oldGame.shield) (List.map (addTuples (0, -1)) (List.filter (inScreen oldGame.window) oldGame.shotsEnemies))
       }
     EnemyTimer ->
       wiggle (changeShift oldGame)
+    EnemyShotTimer ->
+      { oldGame
+      | shotsEnemies <- (newEnemyShot oldGame.enemies oldGame.seed) ++ oldGame.shotsEnemies
+      , seed <- newSeed oldGame.enemies oldGame.seed
+      }
 
---- INPUTS
--- organize inputs
+--- INPUTS & SIGNALS
 inputs : Signal Action
 inputs =
   Signal.mergeMany
@@ -189,6 +232,7 @@ inputs =
     , Signal.map Resize Window.dimensions
     , Signal.map (always ShotTimer) (Time.fps 30)
     , Signal.map (always EnemyTimer) (Time.fps 1)
+    , Signal.map (always EnemyShotTimer) (Time.fps 1)
     ]
 
 state : Signal Game
