@@ -57,6 +57,12 @@ extractSeed : (Maybe (Int, Int), Random.Seed) -> Random.Seed
 extractSeed (a, seed) =
   seed
 
+limit : Int -> Int
+limit vx =
+  if  | vx <= 200 && vx >= -200 -> vx
+      | vx < -200 -> -200
+      | vx > 200 -> 200
+
 
 --- TYPE DEFINITIONS
 -- objects & their wiggeling functions
@@ -66,12 +72,13 @@ type alias Game =
   , shotsShip : List (Int, Int)
   , shotsEnemies : List (Int, Int)
   , seed : Random.Seed
-  , window : (Int, Int)
   , enemies : List (Int, Int)
   , shift : Shift
   , shifted : Int
   , level : Level
-  , shield : List (Int, Int)}
+  , shield : List (Int, Int)
+  , window : (Int, Int)
+  , playfieldWidth : Int}
 
 type alias Player =
   { score : Int
@@ -99,7 +106,8 @@ defaultGame =
   , shift = Left
   , shifted = 0
   , level = One
-  , shield = [(0, -100), (-200, -100), (200, -100)]}
+  , shield = [(0, -100), (-200, -100), (200, -100)]
+  , playfieldWidth = 200}
 
 ball : Int -> Int -> Form
 ball vx vy =
@@ -113,7 +121,7 @@ viewShip : (Int, Int) -> Form
 viewShip (vx, vy) =
   image 40 30 "images/Ship.png"
   |> toForm
-  |> move (toFloat vx, toFloat vy)
+  |> move (toFloat (limit vx), toFloat vy)
 
 viewFShot : (Int, Int) -> Form
 viewFShot (x, y) =
