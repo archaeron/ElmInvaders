@@ -119,14 +119,14 @@ ball vx vy =
 -- create shown Element
 viewShip : (Int, Int) -> Form
 viewShip (vx, vy) =
-  image 40 30 "images/Ship.png"
+  croppedImage (0, 0) 22 22 "images/sprite.gif"
   |> toForm
   |> move (toFloat (limit vx), toFloat vy)
 
 viewFShot : (Int, Int) -> Form
 viewFShot (x, y) =
-  rect 5 5
-  |> filled Color.purple
+  croppedImage (66, 0) 22 22 "images/sprite.gif"
+  |> toForm
   |> move (toFloat x, toFloat y)
 
 viewEShot : (Int, Int) -> Form
@@ -137,13 +137,13 @@ viewEShot (x, y) =
 
 viewEnemy : (Int, Int) -> Form
 viewEnemy (vx, vy) =
-  image 40 30 "images/Invader.png"
+  croppedImage (22, 0) 22 22 "images/sprite.gif"
   |> toForm
   |> move (toFloat vx, toFloat vy)
 
 viewShield : (Int, Int) -> Form
 viewShield (x, y) =
-  image 40 30 "images/shield.png"
+  croppedImage (44, 0) 22 22 "images/sprite.gif"
   |> toForm
   |> move (toFloat x, toFloat y)
 
